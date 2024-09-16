@@ -1,6 +1,6 @@
-import express from "express"
-import cors from "cors"
-import cookieParser from "cookie-parser"
+import express from "express";
+import cors from "cors";
+import cookieParser from "cookie-parser";
 
 const app = express();
 
@@ -16,15 +16,15 @@ app.use(express.json({
 app.use(express.urlencoded({
     extended: true,
     limit: "16kb"
-}))
+}));
 
-app.use(express.static("public"))
-app.use(cookieParser())
+app.use(express.static("public"));
+app.use(cookieParser());
 
-//Routes import
-import {registerUser} from "./controllers/user.controller.js";
+// Routes import
+import userRoutes from "./routes/user.routes.js";
 
-//Routes declare
-app.use("/api/v1/user", registerUser)
+// Routes declare
+app.use("/api/v1/user", userRoutes);  // Use userRoutes
 
-export { app }
+export { app };

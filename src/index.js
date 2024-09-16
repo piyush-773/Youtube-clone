@@ -23,21 +23,3 @@ connectDB()
 .catch( (err)=> {
     console.error("Mongodb connection failed : ", err);
 })
-/*
-const express = require("express");
-const app = express()(async () => {
-  try {
-    await mongoose.connect(`${process.env.MONGODB_URI}/${DB_NAME}`);
-    app.on("error", (error) => {
-      console.log("Error : ", error);
-      throw err;
-    });
-    app.Listen(process.env.PORT, ()=>{
-        console.log(`App is running on port ${process.env.PORT}`);
-    })
-  } catch (error) {
-    console.log(error);
-    throw err;
-  }
-})();
-*/

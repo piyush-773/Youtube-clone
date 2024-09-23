@@ -1,7 +1,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { uploadOnCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
@@ -295,7 +295,15 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Failed to upload avatar");
   }
 
-  const user = await User.findByIdAndUpdate(
+  // Find the current user to get the previous avatar
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  const previousAvatarUrl = user.avatar
+
+  const updatedUser = await User.findByIdAndUpdate(
     req.user._id,
     {
       $set: {
@@ -304,9 +312,13 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     },
     { new: true }
   );
+
+  // Delete the previous avatar from cloudinary
+  await deleteFromCloudinary(previousAvatarUrl);
+
   return res
     .status(200)
-    .json(new ApiResponse(200, user, "Avatar image updated success"));
+    .json(new ApiResponse(200, updatedUser, "Avatar image updated success"));
 });
 
 const updateUserCoverImage = asyncHandler(async (req, res) => {
@@ -319,7 +331,13 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Failed to upload avatar");
   }
 
-  const user = await User.findByIdAndUpdate(
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+  const previousCoverImageUrl = user.coverImage;
+
+  const updatedUser = await User.findByIdAndUpdate(
     req.user._id,
     {
       $set: {
@@ -328,9 +346,11 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     },
     { new: true }
   );
+
+  await deleteFromCloudinary(previousCoverImageUrl)
   return res
     .status(200)
-    .json(new ApiResponse(200, user, "Cover image updated success"));
+    .json(new ApiResponse(200, updatedUser, "Cover image updated success"));
 });
 
 const getUserChannelProfile = asyncHandler(async (req, res) => {

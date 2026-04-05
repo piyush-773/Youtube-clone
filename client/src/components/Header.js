@@ -1,57 +1,96 @@
-import React from "react";
-import { Link } from "react-router-dom";
-import Avatar from "react-avatar";
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { AiOutlineMenu, AiOutlineBell } from "react-icons/ai";
 import { CiSearch } from "react-icons/ci";
 import { IoMdMic } from "react-icons/io";
 import { RiVideoAddLine } from "react-icons/ri";
 
-function Header({ isLoggedIn }) {
+function Header({ isLoggedIn, user, onLogout, onToggleSidebar }) {
+    const [searchTerm, setSearchTerm] = useState("");
+    const navigate = useNavigate();
+
+    function handleSearch(event) {
+        event.preventDefault();
+        const trimmedSearch = searchTerm.trim();
+        navigate(trimmedSearch ? `/?q=${encodeURIComponent(trimmedSearch)}` : "/");
+    }
+
     return (
-        <div className="flex sticky w-[100%] top-0 bg-white justify-between px-6 py-2 shadow-md">
-            {/* Left Side: Logo & Menu */}
-            <div className="flex items-center space-x-5">
-                <AiOutlineMenu className="text-4xl rounded-full cursor-pointer bg-gray-100 hover:bg-gray-200 delay-200 p-2" />
+        <div className="sticky top-0 z-30 flex w-full flex-wrap items-center justify-between gap-4 border-b border-slate-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur md:px-6">
+            <div className="flex items-center space-x-4">
+                <button
+                    type="button"
+                    onClick={onToggleSidebar}
+                    className="rounded-full bg-slate-100 p-2 text-4xl text-slate-700 transition hover:bg-slate-200"
+                    aria-label="Toggle navigation menu"
+                >
+                    <AiOutlineMenu />
+                </button>
                 <Link to="/">
-                    <img
-                        src="/hub.png"
-                        alt="Logo"
-                        className="w-24 cursor-pointer px-3 bg-gray-100"
-                    />
+                    <div className="flex items-center gap-3">
+                        <img src="/hub.png" alt="Logo" className="w-24 cursor-pointer" />
+                    </div>
                 </Link>
             </div>
 
-            {/* Middle: Search Bar */}
-            <div className="flex items-center w-[35%]">
-                <div className="w-full px-3 py-2 border rounded-l-full">
+            <form onSubmit={handleSearch} className="order-3 flex w-full items-center md:order-2 md:max-w-2xl">
+                <div className="w-full rounded-l-full border border-slate-300 px-4 py-3">
                     <input
                         type="text"
-                        placeholder="Search here"
+                        placeholder="Search"
                         className="w-full outline-none"
+                        value={searchTerm}
+                        onChange={(event) => setSearchTerm(event.target.value)}
                     />
                 </div>
-                <button className="px-4 py-2 rounded-r-full bg-gray-100 hover:bg-gray-200 duration-200">
+                <button
+                    type="submit"
+                    className="rounded-r-full border border-l-0 border-slate-300 bg-slate-100 px-5 py-3 hover:bg-slate-200"
+                >
                     <CiSearch size="24px" />
                 </button>
                 <IoMdMic
                     size="42px"
-                    className="rounded-full m-3 border p-2 bg-gray-100 cursor-pointer hover:bg-gray-200 duration-200"
+                    className="ml-3 hidden rounded-full border border-slate-300 bg-slate-100 p-2 text-slate-700 sm:block"
                 />
-            </div>
+            </form>
 
-            {/* Right Side: Icons & User Avatar */}
             {isLoggedIn ? (
-                <div className="flex space-x-5 items-center">
-                    <RiVideoAddLine className="text-2xl cursor-pointer" />
-                    <AiOutlineBell className="text-2xl cursor-pointer" />
-                    <div className="cursor-pointer">
-                        <Avatar src="/logo.png" size="32" round={true} />
-                    </div>
+                <div className="order-2 flex items-center gap-3 md:order-3 md:gap-4">
+                    <Link to="/your-videos" className="hidden rounded-full bg-red-50 p-2 text-red-600 md:block">
+                        <RiVideoAddLine className="text-2xl" />
+                    </Link>
+                    <AiOutlineBell className="hidden text-2xl text-slate-700 md:block" />
+                    <Link to="/profile" className="flex items-center gap-3 rounded-full border border-slate-200 px-2 py-1">
+                        <img
+                            src={user?.avatar || "https://api.dicebear.com/7.x/initials/svg?seed=YT"}
+                            alt={user?.fullName || "User"}
+                            className="h-9 w-9 rounded-full object-cover"
+                        />
+                        <span className="hidden text-sm font-medium text-slate-700 md:block">
+                            {user?.fullName || "Creator"}
+                        </span>
+                    </Link>
+                    <button
+                        type="button"
+                        onClick={onLogout}
+                        className="hidden rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 md:block"
+                    >
+                        Logout
+                    </button>
                 </div>
             ) : (
-                <Link to="/login" className="text-blue-600 hover:underline">
-                    Login
-                </Link>
+                <div className="order-2 flex items-center gap-3 md:order-3">
+                    <Link to="/signup" className="hidden text-sm font-medium text-slate-600 sm:block">
+                        Sign up
+                    </Link>
+                    <Link
+                        to="/login"
+                        className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-blue-600"
+                    >
+                        Login
+                    </Link>
+                </div>
             )}
         </div>
     );

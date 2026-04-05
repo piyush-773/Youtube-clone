@@ -3,6 +3,7 @@ import {
   deleteVideo,
   getAllVideos,
   getVideoById,
+  incrementVideoViews,
   publishAVideo,
   updateVideo,
 } from "../controllers/video.controller.js";
@@ -10,7 +11,6 @@ import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
 
 const router = Router();
-// router.use(verifyJWT); // Apply verifyJWT middleware to all routes in this file
 
 router
   .route("/")
@@ -29,19 +29,25 @@ router
     publishAVideo
   );
 
+router.route("/:videoId/view").patch(incrementVideoViews);
+
 router
   .route("/:videoId")
   .get(getVideoById)
-  .delete(verifyJWT,deleteVideo)
-  .patch(verifyJWT,upload.fields([
-    {
-      name: "videoFile",
-      maxCount: 1,
-    },
-    {
-      name: "thumbnail",
-      maxCount: 1,
-    },
-  ]), updateVideo);
+  .delete(verifyJWT, deleteVideo)
+  .patch(
+    verifyJWT,
+    upload.fields([
+      {
+        name: "videoFile",
+        maxCount: 1,
+      },
+      {
+        name: "thumbnail",
+        maxCount: 1,
+      },
+    ]),
+    updateVideo
+  );
 
 export default router;

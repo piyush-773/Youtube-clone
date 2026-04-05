@@ -1,24 +1,12 @@
-import { Navigate } from "react-router-dom";
-import { axiosInstance } from "./AxiosInstance";
-import Loader from "../components/Loader";
-import { useEffect, useState } from "react";
+import React from "react";
+import { Navigate, useLocation } from "react-router-dom";
 
-const ProtectedRoute = ({ children }) => {
-    const [isAuthenticated, setIsAuthenticated] = useState(null);
-    useEffect(() => {
-        const checkAuth = async () => {
-            try {
-                const response = await axiosInstance.get("/auth/verify-token");
-                if (response.data.success) setIsAuthenticated(true);
-            } catch (error) {
-                setIsAuthenticated(false);
-            }
-            checkAuth();
-        };
-    }, []);
+export const ProtectedRoute = ({ isLoggedIn, children }) => {
+    const location = useLocation();
 
-    if (isAuthenticated === null) return <Loader />;
-    return isAuthenticated ? children : <Navigate to="/login" />;
+    if (!isLoggedIn) {
+        return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+    }
+
+    return children;
 };
-
-export default ProtectedRoute;

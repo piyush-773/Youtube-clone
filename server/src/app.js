@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import multer from "multer";
 
 const app = express();
 
@@ -46,5 +47,27 @@ app.use("/api/v1/comments", commentRouter);
 app.use("/api/v1/likes", likeRouter);
 app.use("/api/v1/playlist", playlistRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
+
+app.use((error, req, res, next) => {
+  if (error instanceof multer.MulterError && error.code === "LIMIT_FILE_SIZE") {
+    return res.status(400).json({
+      statusCode: 400,
+      data: null,
+      message: "Uploaded media must be 100MB or less",
+      success: false,
+      errors: [error.message],
+    });
+  }
+
+  const statusCode = error?.statusCode || 500;
+
+  return res.status(statusCode).json({
+    statusCode,
+    data: error?.data || null,
+    message: error?.message || "Internal server error",
+    success: false,
+    errors: error?.errors || [],
+  });
+});
 
 export { app };

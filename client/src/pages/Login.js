@@ -7,11 +7,13 @@ function Login({ setLoggedIn, setUser }) {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
     async function handleSubmit(e) {
         e.preventDefault();
         setError("");
+        setLoading(true);
 
         try {
             const response = await axiosInstance.post("user/login", {
@@ -31,6 +33,8 @@ function Login({ setLoggedIn, setUser }) {
             setError("Invalid username or password");
         } catch (apiError) {
             setError(apiError.response?.data?.message || "Login failed.");
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -43,12 +47,12 @@ function Login({ setLoggedIn, setUser }) {
                             Welcome back
                         </p>
                         <h5 className="mt-2 text-2xl font-bold text-slate-900">
-                            Sign in to continue building your feed
+                            Sign in to continue
                         </h5>
                     </div>
                     <div>
                         <label htmlFor="username" className="mb-2 block text-sm font-medium text-slate-900">
-                            Username
+                            Username <span className="text-red-500">*</span>
                         </label>
                         <input
                             type="text"
@@ -63,7 +67,7 @@ function Login({ setLoggedIn, setUser }) {
                     </div>
                     <div>
                         <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-900">
-                            Password
+                            Password <span className="text-red-500">*</span>
                         </label>
                         <input
                             type="password"
@@ -98,9 +102,10 @@ function Login({ setLoggedIn, setUser }) {
                     <div className="flex flex-col gap-3 sm:flex-row">
                         <button
                             type="submit"
-                            className="flex-1 rounded-2xl bg-red-600 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-red-700"
+                            disabled={loading}
+                            className="flex-1 rounded-2xl bg-red-600 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                            Login
+                            {loading ? "Processing..." : "Login"}
                         </button>
                         <button
                             type="button"
@@ -110,6 +115,9 @@ function Login({ setLoggedIn, setUser }) {
                             Cancel
                         </button>
                     </div>
+                    {loading ? (
+                        <p className="text-xs text-slate-500">Processing your request...</p>
+                    ) : null}
                     <div className="text-sm font-medium text-slate-500">
                         Not registered?{" "}
                         <Link to="/signup" className="text-blue-700 hover:underline">

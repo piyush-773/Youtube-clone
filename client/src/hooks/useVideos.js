@@ -11,6 +11,7 @@ export function useVideos(query = "") {
 
         async function loadVideos() {
             setLoading(true);
+            setError("");
 
             try {
                 const response = await fetchData("videos", query ? { query } : {});
@@ -22,7 +23,8 @@ export function useVideos(query = "") {
                 }
             } catch (loadError) {
                 if (isMounted) {
-                    setError("Failed to load videos");
+                    setError("We couldn't load videos right now.");
+                    setVideos([]);
                 }
             } finally {
                 if (isMounted) {

@@ -2,6 +2,7 @@ import React from "react";
 import { useSearchParams } from "react-router-dom";
 import Card from "./Card";
 import Loader from "./Loader";
+import ErrorState from "./ErrorState";
 import { useVideos } from "../hooks/useVideos";
 
 function Home() {
@@ -9,8 +10,20 @@ function Home() {
     const query = searchParams.get("q") || "";
     const { videos, loading, error } = useVideos(query);
 
-    if (loading) return <Loader />;
-    if (error && !videos.length) return <div className="p-6 text-red-600">{error}</div>;
+    if (loading) {
+        return <Loader label={query ? "Searching videos..." : "Loading feed..."} />;
+    }
+
+    if (error && !videos.length) {
+        return (
+            <ErrorState
+                title="Feed unavailable"
+                message={error}
+                actionLabel="Try again"
+                onAction={() => window.location.reload()}
+            />
+        );
+    }
 
     return (
         <div className="min-h-screen flex-1 bg-slate-50 px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
@@ -35,9 +48,10 @@ function Home() {
                     ))}
                 </div>
             ) : (
-                <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">
-                    No videos available
-                </div>
+                <ErrorState
+                    title="No videos found"
+                    message={query ? "Try a different search term." : "There are no videos to show yet."}
+                />
             )}
         </div>
     );

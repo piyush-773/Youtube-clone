@@ -1,4 +1,6 @@
+import jwt from "jsonwebtoken";
 import { isValidObjectId } from "mongoose";
+import fs from "fs";
 import { Video } from "../models/video.model.js";
 import { User } from "../models/user.model.js";
 import { Like } from "../models/like.model.js";
@@ -9,6 +11,35 @@ import {
   deleteFromCloudinary,
   uploadOnCloudinary,
 } from "../utils/cloudinary.js";
+
+const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024;
+
+const safelyRemoveLocalFile = (localFilePath) => {
+  if (localFilePath && fs.existsSync(localFilePath)) {
+    fs.unlinkSync(localFilePath);
+  }
+};
+
+async function getAuthenticatedUser(req) {
+  try {
+    const token =
+      req.cookies?.accessToken ||
+      req.header("Authorization")?.replace("Bearer ", "");
+
+    if (!token) {
+      return null;
+    }
+
+    const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    const user = await User.findById(decodedToken?._id).select(
+      "-password -refreshToken"
+    );
+
+    return user || null;
+  } catch (error) {
+    return null;
+  }
+}
 
 const getAllVideos = asyncHandler(async (req, res) => {
   const {
@@ -108,6 +139,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
   }
 
   const videoLocalPath = req.files?.videoFile?.[0]?.path;
+  const uploadedVideo = req.files?.videoFile?.[0];
   const thumbnailLocalPath = req.files?.thumbnail?.[0]?.path;
 
   if (!videoLocalPath) {
@@ -118,9 +150,36 @@ const publishAVideo = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Please provide the thumbnail file");
   }
 
-  const videoFile = await uploadOnCloudinary(videoLocalPath);
-  const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
-  const duration = Math.floor(videoFile.duration || 0);
+  if (uploadedVideo?.size > MAX_VIDEO_SIZE_BYTES) {
+    safelyRemoveLocalFile(videoLocalPath);
+    safelyRemoveLocalFile(thumbnailLocalPath);
+    throw new ApiError(400, "Video size must be 100MB or less");
+  }
+
+  const videoFile = await uploadOnCloudinary(videoLocalPath, {
+    resource_type: "video",
+  });
+  const thumbnail = await uploadOnCloudinary(thumbnailLocalPath, {
+    resource_type: "image",
+  });
+
+  if (!videoFile?.url) {
+    throw new ApiError(
+      500,
+      "Video upload failed. Please try again with a supported video file."
+    );
+  }
+
+  if (!thumbnail?.url) {
+    throw new ApiError(
+      500,
+      "Thumbnail upload failed. Please try again with a supported image."
+    );
+  }
+
+  const duration = Number.isFinite(videoFile.duration)
+    ? Math.floor(videoFile.duration)
+    : 0;
 
   const newVideo = await Video.create({
     title,
@@ -151,13 +210,7 @@ const getVideoById = asyncHandler(async (req, res) => {
 
   res
     .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        { ...video, likesCount },
-        "Video found"
-      )
-    );
+    .json(new ApiResponse(200, { ...video, likesCount }, "Video found"));
 });
 
 const incrementVideoViews = asyncHandler(async (req, res) => {
@@ -177,6 +230,18 @@ const incrementVideoViews = asyncHandler(async (req, res) => {
 
   if (!video) {
     throw new ApiError(404, "Video not found");
+  }
+
+  const authenticatedUser = await getAuthenticatedUser(req);
+
+  if (authenticatedUser?._id) {
+    await User.findByIdAndUpdate(authenticatedUser._id, {
+      $pull: { watchHistory: video._id },
+    });
+
+    await User.findByIdAndUpdate(authenticatedUser._id, {
+      $push: { watchHistory: { $each: [video._id], $position: 0 } },
+    });
   }
 
   return res
@@ -214,17 +279,36 @@ const updateVideo = asyncHandler(async (req, res) => {
   const prevVideo = video.videoFile;
   const prevThumbnail = video.thumbnail;
   const videoLocalPath = req.files?.videoFile?.[0]?.path;
+  const uploadedVideo = req.files?.videoFile?.[0];
   const thumbnailLocalPath = req.files?.thumbnail?.[0]?.path;
 
   let videoFile = { url: video.videoFile };
   let thumbnail = { url: video.thumbnail };
 
+  if (uploadedVideo?.size > MAX_VIDEO_SIZE_BYTES) {
+    safelyRemoveLocalFile(videoLocalPath);
+    safelyRemoveLocalFile(thumbnailLocalPath);
+    throw new ApiError(400, "Video size must be 100MB or less");
+  }
+
   if (videoLocalPath) {
-    videoFile = await uploadOnCloudinary(videoLocalPath);
+    videoFile = await uploadOnCloudinary(videoLocalPath, {
+      resource_type: "video",
+    });
+
+    if (!videoFile?.url) {
+      throw new ApiError(500, "Failed to upload replacement video");
+    }
   }
 
   if (thumbnailLocalPath) {
-    thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
+    thumbnail = await uploadOnCloudinary(thumbnailLocalPath, {
+      resource_type: "image",
+    });
+
+    if (!thumbnail?.url) {
+      throw new ApiError(500, "Failed to upload replacement thumbnail");
+    }
   }
 
   const updatedVideo = await Video.findByIdAndUpdate(

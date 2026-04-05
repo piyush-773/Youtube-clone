@@ -17,6 +17,7 @@ import LikedVideos from "./pages/LikedVideos.js";
 import ForgetPassword from "./pages/ForgetPassword.js";
 import UpdateProfile from "./pages/UpdateProfile.js";
 import UpdateVideo from "./pages/UpdateVideo.js";
+import ErrorState from "./components/ErrorState.js";
 import { ProtectedRoute } from "./components/ProtectedRoute.js";
 import { clearAuthState, loadAuthState } from "./utils/storage.js";
 
@@ -86,96 +87,27 @@ function App() {
                             )
                         }
                     />
-                    <Route
-                        path="/profile"
-                        element={
-                            <ProtectedRoute isLoggedIn={isLoggedIn}>
-                                <Profile user={user} />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/profile/update"
-                        element={
-                            <ProtectedRoute isLoggedIn={isLoggedIn}>
-                                <UpdateProfile user={user} />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/history"
-                        element={
-                            <ProtectedRoute isLoggedIn={isLoggedIn}>
-                                <History />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/your-videos"
-                        element={
-                            <ProtectedRoute isLoggedIn={isLoggedIn}>
-                                <YourVideos />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/videos/:videoId/edit"
-                        element={
-                            <ProtectedRoute isLoggedIn={isLoggedIn}>
-                                <UpdateVideo />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/watch-later"
-                        element={
-                            <ProtectedRoute isLoggedIn={isLoggedIn}>
-                                <WatchLater />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/liked-videos"
-                        element={
-                            <ProtectedRoute isLoggedIn={isLoggedIn}>
-                                <LikedVideos />
-                            </ProtectedRoute>
-                        }
-                    />
+                    <Route path="/profile" element={<ProtectedRoute isLoggedIn={isLoggedIn}><Profile user={user} /></ProtectedRoute>} />
+                    <Route path="/profile/update" element={<ProtectedRoute isLoggedIn={isLoggedIn}><UpdateProfile user={user} setUser={setUser} /></ProtectedRoute>} />
+                    <Route path="/history" element={<ProtectedRoute isLoggedIn={isLoggedIn}><History /></ProtectedRoute>} />
+                    <Route path="/your-videos" element={<ProtectedRoute isLoggedIn={isLoggedIn}><YourVideos /></ProtectedRoute>} />
+                    <Route path="/videos/:videoId/edit" element={<ProtectedRoute isLoggedIn={isLoggedIn}><UpdateVideo /></ProtectedRoute>} />
+                    <Route path="/watch-later" element={<ProtectedRoute isLoggedIn={isLoggedIn}><WatchLater /></ProtectedRoute>} />
+                    <Route path="/liked-videos" element={<ProtectedRoute isLoggedIn={isLoggedIn}><LikedVideos /></ProtectedRoute>} />
                     <Route path="/forget-password" element={<ForgetPassword />} />
-                    <Route
-                        path="/subscriptions"
-                        element={
-                            <ProtectedRoute isLoggedIn={isLoggedIn}>
-                                <Subscriptions />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/your-channel"
-                        element={
-                            <ProtectedRoute isLoggedIn={isLoggedIn}>
-                                <YourChannel />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/playlist"
-                        element={
-                            <ProtectedRoute isLoggedIn={isLoggedIn}>
-                                <Playlist />
-                            </ProtectedRoute>
-                        }
-                    />
+                    <Route path="/subscriptions" element={<ProtectedRoute isLoggedIn={isLoggedIn}><Subscriptions /></ProtectedRoute>} />
+                    <Route path="/your-channel" element={<ProtectedRoute isLoggedIn={isLoggedIn}><YourChannel /></ProtectedRoute>} />
+                    <Route path="/playlist" element={<ProtectedRoute isLoggedIn={isLoggedIn}><Playlist /></ProtectedRoute>} />
                     <Route
                         path="*"
                         element={
-                            <div className="flex flex-1 items-center justify-center p-10">
-                                <div className="rounded-3xl bg-white p-10 text-center shadow-sm">
-                                    <h1 className="text-2xl font-bold text-slate-900">
-                                        Page not found
-                                    </h1>
-                                </div>
+                            <div className="flex flex-1">
+                                <ErrorState
+                                    title="That page took a wrong turn"
+                                    message="The page you are looking for does not exist or may have been moved."
+                                    actionLabel="Go home"
+                                    onAction={() => (window.location.href = "/")}
+                                />
                             </div>
                         }
                     />

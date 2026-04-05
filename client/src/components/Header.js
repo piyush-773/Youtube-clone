@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AiOutlineMenu, AiOutlineBell } from "react-icons/ai";
 import { CiSearch } from "react-icons/ci";
@@ -7,12 +7,40 @@ import { RiVideoAddLine } from "react-icons/ri";
 
 function Header({ isLoggedIn, user, onLogout, onToggleSidebar }) {
     const [searchTerm, setSearchTerm] = useState("");
+    const [isListening, setIsListening] = useState(false);
     const navigate = useNavigate();
+
+    const SpeechRecognition = useMemo(
+        () => window.SpeechRecognition || window.webkitSpeechRecognition,
+        []
+    );
 
     function handleSearch(event) {
         event.preventDefault();
         const trimmedSearch = searchTerm.trim();
         navigate(trimmedSearch ? `/?q=${encodeURIComponent(trimmedSearch)}` : "/");
+    }
+
+    function handleMicSearch() {
+        if (!SpeechRecognition) {
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = "en-US";
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        recognition.onstart = () => setIsListening(true);
+        recognition.onend = () => setIsListening(false);
+        recognition.onerror = () => setIsListening(false);
+        recognition.onresult = (event) => {
+            const transcript = event.results?.[0]?.[0]?.transcript || "";
+            setSearchTerm(transcript);
+            navigate(transcript ? `/?q=${encodeURIComponent(transcript)}` : "/");
+        };
+
+        recognition.start();
     }
 
     return (
@@ -49,10 +77,17 @@ function Header({ isLoggedIn, user, onLogout, onToggleSidebar }) {
                 >
                     <CiSearch size="24px" />
                 </button>
-                <IoMdMic
-                    size="42px"
-                    className="ml-3 hidden rounded-full border border-slate-300 bg-slate-100 p-2 text-slate-700 sm:block"
-                />
+                <button
+                    type="button"
+                    onClick={handleMicSearch}
+                    disabled={!SpeechRecognition}
+                    className={`ml-3 hidden rounded-full border border-slate-300 p-2 sm:block ${
+                        isListening ? "bg-red-100 text-red-600" : "bg-slate-100 text-slate-700"
+                    } ${!SpeechRecognition ? "cursor-not-allowed opacity-50" : ""}`}
+                    title={SpeechRecognition ? "Voice search" : "Voice search not supported"}
+                >
+                    <IoMdMic size="26px" />
+                </button>
             </form>
 
             {isLoggedIn ? (

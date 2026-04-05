@@ -1,7 +1,9 @@
 import axios from "axios";
 import { mockVideos } from "./mockData";
 
-const baseUrl = process.env.REACT_APP_BASE_URL || "http://localhost:8000/api/v1/";
+const baseUrl = (
+    process.env.REACT_APP_BASE_URL?.trim() || "http://localhost:8000/api/v1/"
+).replace(/\/?$/, "/");
 
 export const fetchData = async (url, params = {}) => {
     try {

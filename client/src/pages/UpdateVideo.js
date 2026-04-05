@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { axiosInstance } from "../components/AxiosInstance";
 import Loader from "../components/Loader";
+import ErrorState from "../components/ErrorState";
+
+const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024;
 
 const UpdateVideo = () => {
     const { videoId } = useParams();
@@ -53,6 +56,12 @@ const UpdateVideo = () => {
         setError("");
 
         try {
+            if (videoFile && videoFile.size > MAX_VIDEO_SIZE_BYTES) {
+                setError("Video size must be 100MB or less.");
+                setSaving(false);
+                return;
+            }
+
             const formData = new FormData();
             formData.append("title", title);
             formData.append("description", description);
@@ -104,7 +113,16 @@ const UpdateVideo = () => {
     }
 
     if (!video) {
-        return <div className="flex-1 p-8 text-slate-600">Video not found.</div>;
+        return (
+            <div className="flex-1">
+                <ErrorState
+                    title="Video not available"
+                    message={error || "This video could not be loaded for editing."}
+                    actionLabel="Go back"
+                    onAction={() => navigate(-1)}
+                />
+            </div>
+        );
     }
 
     return (
@@ -112,21 +130,31 @@ const UpdateVideo = () => {
             <div className="mx-auto max-w-3xl rounded-[2rem] bg-white p-6 shadow-sm sm:p-8">
                 <h1 className="text-3xl font-bold text-slate-900">Edit video</h1>
                 <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
-                    <input
-                        value={title}
-                        onChange={(event) => setTitle(event.target.value)}
-                        className="w-full rounded-2xl border border-slate-300 bg-slate-50 p-3"
-                        placeholder="Video title"
-                        required
-                    />
-                    <textarea
-                        rows="5"
-                        value={description}
-                        onChange={(event) => setDescription(event.target.value)}
-                        className="w-full rounded-2xl border border-slate-300 bg-slate-50 p-3"
-                        placeholder="Video description"
-                        required
-                    />
+                    <div>
+                        <label className="mb-2 block text-sm font-medium text-slate-900">
+                            Title <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                            value={title}
+                            onChange={(event) => setTitle(event.target.value)}
+                            className="w-full rounded-2xl border border-slate-300 bg-slate-50 p-3"
+                            placeholder="Video title"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className="mb-2 block text-sm font-medium text-slate-900">
+                            Description <span className="text-red-500">*</span>
+                        </label>
+                        <textarea
+                            rows="5"
+                            value={description}
+                            onChange={(event) => setDescription(event.target.value)}
+                            className="w-full rounded-2xl border border-slate-300 bg-slate-50 p-3"
+                            placeholder="Video description"
+                            required
+                        />
+                    </div>
                     <div className="grid gap-4 md:grid-cols-2">
                         <label className="rounded-2xl border border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
                             Replace thumbnail
@@ -142,9 +170,24 @@ const UpdateVideo = () => {
                             <input
                                 type="file"
                                 accept="video/*"
-                                onChange={(event) => setVideoFile(event.target.files?.[0] || null)}
+                                onChange={(event) => {
+                                    const nextVideoFile = event.target.files?.[0] || null;
+
+                                    if (nextVideoFile && nextVideoFile.size > MAX_VIDEO_SIZE_BYTES) {
+                                        setError("Video size must be 100MB or less.");
+                                        event.target.value = "";
+                                        setVideoFile(null);
+                                        return;
+                                    }
+
+                                    setError("");
+                                    setVideoFile(nextVideoFile);
+                                }}
                                 className="mt-2 block w-full"
                             />
+                            <span className="mt-2 block text-xs text-slate-500">
+                                Maximum video size: 100MB.
+                            </span>
                         </label>
                     </div>
                     {error ? <p className="text-sm text-red-600">{error}</p> : null}
@@ -154,7 +197,7 @@ const UpdateVideo = () => {
                             disabled={saving}
                             className="rounded-2xl bg-red-600 px-6 py-3 font-semibold text-white disabled:opacity-60"
                         >
-                            {saving ? "Updating..." : "Update video"}
+                            {saving ? "Processing..." : "Update video"}
                         </button>
                         <button
                             type="button"
@@ -162,7 +205,7 @@ const UpdateVideo = () => {
                             disabled={deleting}
                             className="rounded-2xl bg-slate-900 px-6 py-3 font-semibold text-white disabled:opacity-60"
                         >
-                            {deleting ? "Deleting..." : "Delete video"}
+                            {deleting ? "Processing..." : "Delete video"}
                         </button>
                         <button
                             type="button"
@@ -172,6 +215,9 @@ const UpdateVideo = () => {
                             Cancel
                         </button>
                     </div>
+                    {saving || deleting ? (
+                        <p className="text-xs text-slate-500">Processing your request...</p>
+                    ) : null}
                 </form>
             </div>
         </div>
